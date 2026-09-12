@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090b10">
+  <meta name="description" content="Tạo hàng loạt video dọc kiểm tra từ vựng với Edge TTS.">
+  <title>Vocab Motion · Tạo video từ vựng</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true"><span>V</span></div>
+      <div>
+        <p class="eyebrow">VOCAB MOTION</p>
+        <h1>Tạo video từ vựng hàng loạt</h1>
+      </div>
+      <span class="ready-pill"><i></i>Sẵn sàng</span>
+    </header>
+
+    <form id="renderForm" novalidate>
+      <section class="panel script-panel">
+        <div class="section-head">
+          <div>
+            <span class="step">01</span>
+            <h2>Kịch bản</h2>
+          </div>
+          <div class="head-actions">
+            <button class="text-button" id="normalizeButton" type="button">Chuẩn hóa lại</button>
+            <button class="text-button danger" id="clearButton" type="button">Xóa kịch bản</button>
+          </div>
+        </div>
+
+        <label class="sr-only" for="scriptInput">Danh sách kịch bản từ vựng</label>
+        <textarea id="scriptInput" name="script" spellcheck="false" placeholder="# Học nhanh từ vựng&#10;Thuyết phục | Persuade | persuade"># Học nhanh từ vựng
+Từ chối | Reject | reject
+Chấp nhận | Accept | accept
+
+
+# Học nhanh từ vựng
+Đăng ký | Register | register
+Sửa chữa | Repair | repair</textarea>
+
+        <div class="parse-row" aria-live="polite">
+          <div class="parse-stats">
+            <span id="scriptCount">0 kịch bản</span>
+            <span id="wordCount">0 từ</span>
+          </div>
+          <span class="auto-label"><i></i>Tự nhận dạng khi dán</span>
+        </div>
+        <div id="parseMessage" class="parse-message">Mỗi dòng dùng mẫu: Tiếng Việt | English. Lặp lại tiêu đề để tách thành video mới.</div>
+        <div id="normalizedPreview" class="normalized-preview" hidden></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <span class="step">02</span>
+            <h2>Footage</h2>
+          </div>
+          <span class="limit">Tối đa {{ max_upload_mb }} MB</span>
+        </div>
+
+        <label class="drop-zone" id="dropZone" for="footageInput">
+          <input id="footageInput" name="footage" type="file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska" multiple>
+          <span class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5V14"/></svg>
+          </span>
+          <strong>Chọn video footage</strong>
+          <small>Có thể chọn nhiều file; app tự xoay vòng cho các bài</small>
+        </label>
+        <div id="fileList" class="file-list" hidden></div>
+      </section>
+
+      <section class="panel settings-panel">
+        <div class="section-head">
+          <div>
+            <span class="step">03</span>
+            <h2>Nội dung cố định</h2>
+          </div>
+          <span class="voice-badge">Hoài My · Jenny −15%</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Tiêu đề trên video</span>
+            <input id="titleInput" name="title" value="TỪ VỰNG HAY" maxlength="60">
+          </label>
+          <label>
+            <span>Dòng phụ</span>
+            <input id="subtitleInput" name="subtitle" value="TEST NHANH" maxlength="60">
+          </label>
+          <label class="wide-field">
+            <span>CTA</span>
+            <input id="ctaInput" name="cta" value="Vào nhóm trong bình luận để luyện nghe nói cùng Hà" maxlength="180">
+          </label>
+          <label class="wide-field">
+            <span>Watermark <em>không bắt buộc</em></span>
+            <input id="watermarkInput" name="watermark" placeholder="Ví dụ: @tenkenhcuaban" maxlength="80">
+          </label>
+        </div>
+
+        <div class="format-strip">
+          <span><b>720 × 1280</b> dọc</span>
+          <span><b>Không IPA</b></span>
+          <span><b>Ting</b> khi hiện đáp án</span>
+        </div>
+      </section>
+
+      <div class="submit-dock">
+        <div>
+          <strong id="renderSummary">Sẵn sàng tạo video</strong>
+          <small>Chỉ cần đợi báo “đã nhận đủ dữ liệu”, sau đó có thể thoát app.</small>
+        </div>
+        <button class="primary-button" id="renderButton" type="submit">
+          <span>Tạo toàn bộ video</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5l5 5-5 5"/></svg>
+        </button>
+      </div>
+    </form>
+
+    <section id="jobPanel" class="panel job-panel" hidden aria-live="polite">
+      <div class="job-heading">
+        <div>
+          <p class="eyebrow">LƯỢT RENDER GẦN NHẤT</p>
+          <h2 id="jobStateTitle">Đang chuẩn bị…</h2>
+        </div>
+        <span id="jobPercent" class="percent">0%</span>
+      </div>
+      <div class="progress-track"><div id="progressBar"></div></div>
+      <p id="jobPhase" class="job-phase">Đang gửi dữ liệu lên máy chủ…</p>
+      <div id="safeToLeave" class="safe-note" hidden>
+        <span>✓</span>
+        Đã nhận đủ dữ liệu. Bạn có thể thoát sang app khác; máy chủ vẫn render tiếp.
+      </div>
+      <div id="jobError" class="error-box" hidden></div>
+      <button id="retryJob" class="retry-button" type="button" hidden>Thử lại render — không cần tải lại footage</button>
+      <div id="resultList" class="result-list"></div>
+      <a id="downloadAll" class="download-all" href="#" hidden>
+        Tải tất cả video (.zip)
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+      </a>
+    </section>
+
+    <footer>Edge TTS miễn phí · Hoài My (VI) · Jenny (EN) chậm 15%</footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
